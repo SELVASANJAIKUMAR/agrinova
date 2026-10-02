@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Manage Orders{% endblock %}
+{% block content %}
+<h1>Manage Orders</h1>
+{% for order in orders %}
+<div class="card mb-3 shadow-sm">
+    <div class="card-header d-flex justify-content-between">
+        <span>Order #{{ order.id }} — {{ order.buyer.username }} — {{ order.created_at|date:"M d, Y" }}</span>
+        <span>{{ order.get_payment_status_display }}</span>
+    </div>
+    <div class="card-body">
+        <ul>{% for item in order.items.all %}<li>{{ item.listing.crop.name }} x {{ item.quantity }}</li>{% endfor %}</ul>
+        <strong>Total: ₹{{ order.total_amount }}</strong>
+        <form method="post" class="d-inline ms-3">{% csrf_token %}
+            <input type="hidden" name="order_id" value="{{ order.id }}">
+            <select name="status" class="form-select form-select-sm d-inline-block w-auto">
+                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-success">Update</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

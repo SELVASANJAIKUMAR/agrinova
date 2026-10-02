@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section class="hero-section text-center py-5 mb-4">
+    <div class="hero-overlay rounded-4 p-5">
+        <h1 class="display-4 fw-bold text-white">Welcome to AgriNova</h1>
+        <p class="lead text-white-50 mb-4">Connect farmers and buyers across Tamil Nadu with AI-powered tools for smarter agriculture trade.</p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'marketplace:listing_list' %}" class="btn btn-success btn-lg"><i class="bi bi-shop me-2"></i>Browse Marketplace</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'marketplace:listing_create' %}" class="btn btn-outline-light btn-lg"><i class="bi bi-plus-circle me-2"></i>Sell Your Crop</a>
+            {% else %}
+            <a href="{% url 'accounts:register' %}" class="btn btn-outline-light btn-lg"><i class="bi bi-arrow-right-circle me-2"></i>Get Started</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<h3 class="text-center fw-bold mb-4" style="color: var(--agri-green-dark);">What AgriNova Offers</h3>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <i class="bi bi-shop display-4 text-success"></i>
+                <h5 class="card-title mt-3">Marketplace</h5>
+                <p class="card-text">Browse and sell crops from across Tamil Nadu districts.</p>
+                <a href="{% url 'marketplace:listing_list' %}" class="btn btn-outline-success">Explore</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up display-4 text-success"></i>
+                <h5 class="card-title mt-3">Price Forecasting</h5>
+                <p class="card-text">AI-powered price predictions to help you plan better.</p>
+                <a href="{% url 'forecasting:forecast' %}" class="btn btn-outline-success">View Forecasts</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <i class="bi bi-robot display-4 text-success"></i>
+                <h5 class="card-title mt-3">AI Assistant</h5>
+                <p class="card-text">Get farming advice and marketplace help anytime.</p>
+                <a href="{% url 'chatbot:chat' %}" class="btn btn-outline-success">Chat Now</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Price Forecast{% endblock %}
+{% block content %}
+<h1>Market Price Forecast</h1>
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Demo Data Disclaimer:</strong> Price data shown here is synthetically generated for demonstration purposes. It does not reflect real Tamil Nadu market prices.
+</div>
+
+<form method="get" class="row g-3 mb-4 bg-white p-3 rounded shadow-sm">
+    <div class="col-md-4">
+        <label class="form-label">Crop</label>
+        <select name="crop" class="form-select" required>
+            <option value="">Select crop</option>
+            {% for crop in crops %}
+            <option value="{{ crop.id }}" {% if selected_crop == crop.id|stringformat:"s" %}selected{% endif %}>{{ crop.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">District</label>
+        <select name="district" class="form-select" required>
+            <option value="">Select district</option>
+            {% for val, label in districts %}
+            <option value="{{ val }}" {% if selected_district == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100">Generate Forecast</button>
+    </div>
+</form>
+
+{% if result %}
+{% if result.error %}
+<div class="alert alert-danger">{{ result.error }}</div>
+{% else %}
+<div class="card shadow-sm mb-4"><div class="card-body">
+    <h4>{{ result.crop }} — {{ result.district }}</h4>
+    <p>Recent average: ₹{{ result.current_avg }}
+    {% if result.is_synthetic %}<span class="badge bg-warning text-dark">Simulated Data</span>{% endif %}
+    </p>
+    <canvas id="forecastChart" height="100"></canvas>
+</div></div>
+<div class="row g-3">
+    {% for f in result.forecast %}
+    <div class="col-md-4">
+        <div class="card text-center"><div class="card-body">
+            <h6>{{ f.date }}</h6>
+            <p class="mb-0">Predicted: <strong>₹{{ f.price }}</strong></p>
+            <small class="text-muted">Range: ₹{{ f.low }} – ₹{{ f.high }}</small>
+        </div></div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if result and not result.error %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const historical = {{ result.historical_json }};
+const forecast = {{ result.forecast_json }};
+const allLabels = historical.map(d => d.date).concat(forecast.map(d => d.date));
+const histData = historical.map(d => d.price).concat(forecast.map(() => null));
+const forecastData = historical.map(() => null).concat(forecast.map(d => d.price));
+new Chart(document.getElementById('forecastChart'), {
+    type: 'line',
+    data: {
+        labels: allLabels,
+        datasets: [
+            { label: 'Historical', data: histData, borderColor: '#2d6a4f', tension: 0.3 },
+            { label: 'Forecast', data: forecastData, borderColor: '#d4a373', borderDash: [5,5], tension: 0.3 }
+        ]
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Price Trend & Forecast (₹)' } } }
+});
+</script>
+{% endif %}
+{% endblock %}

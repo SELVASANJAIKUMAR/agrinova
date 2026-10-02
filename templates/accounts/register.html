@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card auth-card">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus display-4" style="color: var(--agri-green);"></i>
+                    <h2 class="card-title mt-2">Create Account</h2>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field.errors }}
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-success w-100">Register</button>
+                </form>
+                <p class="text-center mt-3 mb-0"><a href="{% url 'accounts:login' %}">Already have an account?</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

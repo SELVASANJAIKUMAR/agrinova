@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Buyer-Seller Matching{% endblock %}
+{% block content %}
+<h1>AI Buyer-Seller Matching</h1>
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm"><div class="card-body">
+            <h5>Your Buying Preferences</h5>
+            <form method="post">{% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3"><label class="form-label">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Save Preferences</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-3"><div class="card-header">Recommended Sellers</div><div class="card-body">
+            {% for rec in seller_recommendations %}
+            <div class="d-flex justify-content-between py-2 border-bottom">
+                <span>{{ rec.listing.crop.name }} — {{ rec.listing.seller.username }} ({{ rec.listing.district }})</span>
+                <span><span class="badge bg-success">{{ rec.score }}%</span> <a href="{% url 'marketplace:listing_detail' rec.listing.pk %}">View</a></span>
+            </div>
+            {% empty %}<p class="text-muted">No recommendations yet.</p>{% endfor %}
+        </div></div>
+        <div class="card shadow-sm"><div class="card-header">Potential Buyers for Your Crops</div><div class="card-body">
+            {% for rec in buyer_recommendations %}
+            <div class="d-flex justify-content-between py-2 border-bottom">
+                <span>{{ rec.buyer.username }} wants {{ rec.preference.crop.name }}</span>
+                <span class="badge bg-success">{{ rec.score }}% match</span>
+            </div>
+            {% empty %}<p class="text-muted">No buyer matches for your listings.</p>{% endfor %}
+        </div></div>
+    </div>
+</div>
+{% endblock %}

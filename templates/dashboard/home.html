@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Welcome, {{ profile.get_full_name|default:profile.username }}!</h1>
+<p class="text-muted">{{ profile.location_display }} {% if profile.is_listing_as_seller %}<span class="badge bg-success">Active Seller</span>{% endif %}</p>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card dashboard-stat shadow-sm"><div class="card-body">
+            <h6 class="text-muted">My Listings</h6>
+            <h3>{{ listings|length }}</h3>
+            <a href="{% url 'marketplace:listing_create' %}" class="btn btn-sm btn-outline-success">Add Listing</a>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-stat shadow-sm"><div class="card-body">
+            <h6 class="text-muted">My Orders</h6>
+            <h3>{{ orders|length }}</h3>
+            <a href="{% url 'orders:history' %}" class="btn btn-sm btn-outline-success">View All</a>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-stat shadow-sm"><div class="card-body">
+            <h6 class="text-muted">My Sales</h6>
+            <h3>{{ sales|length }}</h3>
+            <a href="{% url 'orders:sales' %}" class="btn btn-sm btn-outline-success">View All</a>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm"><div class="card-header bg-success text-white">Recommended Sellers for You</div>
+        <div class="card-body">
+            {% for rec in seller_recommendations %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <div>
+                    <strong>{{ rec.listing.crop.name }}</strong> — {{ rec.listing.district }}<br>
+                    <small class="text-muted">{{ rec.listing.quantity }} {{ rec.listing.unit }} @ ₹{{ rec.listing.price_per_unit }}</small>
+                </div>
+                <div><span class="badge bg-success">{{ rec.score }}% match</span>
+                <a href="{% url 'marketplace:listing_detail' rec.listing.pk %}" class="btn btn-sm btn-outline-success ms-1">View</a></div>
+            </div>
+            {% empty %}<p class="text-muted mb-0">Set your preferences in <a href="{% url 'matching:matching' %}">Matching</a> to get recommendations.</p>{% endfor %}
+        </div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm"><div class="card-header bg-success text-white">Buyers Who Might Want Your Crop</div>
+        <div class="card-body">
+            {% for rec in buyer_recommendations %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <div><strong>{{ rec.buyer.username }}</strong> wants {{ rec.preference.crop.name }}<br>
+                <small class="text-muted">{{ rec.preference.quantity_needed }} needed — {{ rec.preference.preferred_district|default:"Any district" }}</small></div>
+                <span class="badge bg-success">{{ rec.score }}% match</span>
+            </div>
+            {% empty %}<p class="text-muted mb-0">No buyer matches yet. Keep your listings active!</p>{% endfor %}
+        </div></div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'chatbot:chat' %}" class="btn btn-success"><i class="bi bi-robot"></i> Open AI Assistant</a>
+    <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Edit Profile</a>
+</div>
+{% endblock %}

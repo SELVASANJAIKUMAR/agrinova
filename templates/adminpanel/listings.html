@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Manage Listings{% endblock %}
+{% block content %}
+<h1>Manage Listings</h1>
+<table class="table table-hover bg-white shadow-sm">
+    <thead><tr><th>Crop</th><th>Seller</th><th>Qty</th><th>Price</th><th>District</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for l in listings %}
+    <tr>
+        <td>{{ l.crop.name }}</td><td>{{ l.seller.username }}</td><td>{{ l.quantity }} {{ l.unit }}</td>
+        <td>₹{{ l.price_per_unit }}</td><td>{{ l.district }}</td>
+        <td>{% if l.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+        <td>
+            <form method="post" class="d-inline">{% csrf_token %}
+                <input type="hidden" name="listing_id" value="{{ l.id }}">
+                {% if l.is_active %}
+                <button name="action" value="deactivate" class="btn btn-sm btn-outline-danger">Remove</button>
+                {% else %}
+                <button name="action" value="activate" class="btn btn-sm btn-outline-success">Restore</button>
+                {% endif %}
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

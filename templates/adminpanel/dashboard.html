@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h1>Admin Dashboard</h1>
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="card dashboard-stat shadow-sm"><div class="card-body"><h6>Total Users</h6><h2>{{ total_users }}</h2></div></div></div>
+    <div class="col-md-4"><div class="card dashboard-stat shadow-sm"><div class="card-body"><h6>Active Listings</h6><h2>{{ total_listings }}</h2></div></div></div>
+    <div class="col-md-4"><div class="card dashboard-stat shadow-sm"><div class="card-body"><h6>Total Orders</h6><h2>{{ total_orders }}</h2></div></div></div>
+</div>
+<div class="card shadow-sm mb-4"><div class="card-body">
+    <h5>Orders Over Time</h5>
+    <canvas id="ordersChart" height="80"></canvas>
+</div></div>
+<div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'adminpanel:users' %}" class="btn btn-outline-success">Manage Users</a>
+    <a href="{% url 'adminpanel:listings' %}" class="btn btn-outline-success">Manage Listings</a>
+    <a href="{% url 'adminpanel:orders' %}" class="btn btn-outline-success">Manage Orders</a>
+    <a href="{% url 'adminpanel:ai_analytics' %}" class="btn btn-outline-success">AI Analytics</a>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('ordersChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for o in orders_over_time %}'{{ o.date }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{ label: 'Orders', data: [{% for o in orders_over_time %}{{ o.count }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor: '#2d6a4f' }]
+    },
+    options: { responsive: true }
+});
+</script>
+{% endblock %}

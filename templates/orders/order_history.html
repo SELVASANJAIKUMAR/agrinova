@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Order History{% endblock %}
+{% block content %}
+<h1>My Orders</h1>
+{% for order in orders %}
+<div class="card mb-3 shadow-sm">
+    <div class="card-header d-flex justify-content-between">
+        <span>Order #{{ order.id }} — {{ order.created_at|date:"M d, Y" }}</span>
+        <span class="badge bg-{% if order.status == 'delivered' %}success{% else %}secondary{% endif %}">{{ order.get_status_display }}</span>
+    </div>
+    <div class="card-body">
+        <ul>{% for item in order.items.all %}
+        <li>{{ item.listing.crop.name }} — {{ item.quantity }} @ ₹{{ item.unit_price }}</li>
+        {% endfor %}</ul>
+        <strong>Total: ₹{{ order.total_amount }}</strong> | Payment: {{ order.get_payment_status_display }}
+    </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No orders yet.</div>
+{% endfor %}
+{% endblock %}

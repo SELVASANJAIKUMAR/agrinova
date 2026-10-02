@@ -1,0 +1,25 @@
+<!-- Floating chat widget -->
+<div id="chat-widget" class="chat-widget">
+    <button id="chat-toggle" class="chat-toggle btn btn-success rounded-circle" title="AgriNova Assistant">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
+    <div id="chat-panel" class="chat-panel d-none">
+        <div class="chat-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-robot"></i> AgriNova Assistant</span>
+            <button id="chat-close" class="btn btn-sm btn-light">&times;</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="chat-msg bot">Hello! I'm your agriculture assistant. Ask me about crops, farming, or how to use AgriNova.</div>
+        </div>
+        {% if user.is_authenticated %}
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="form-control" placeholder="Ask about farming..." maxlength="500">
+            <button id="chat-send" class="btn btn-success"><i class="bi bi-send"></i></button>
+        </div>
+        {% else %}
+        <div class="chat-input-area p-2 text-center">
+            <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-success">Login to chat</a>
+        </div>
+        {% endif %}
+    </div>
+</div>

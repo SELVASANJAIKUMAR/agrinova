@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}AI Analytics{% endblock %}
+{% block content %}
+<h1>AI Chatbot Analytics</h1>
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="card dashboard-stat shadow-sm"><div class="card-body"><h6>Total Queries</h6><h2>{{ total_queries }}</h2></div></div></div>
+    <div class="col-md-4"><div class="card dashboard-stat shadow-sm"><div class="card-body"><h6>Avg Response Time</h6><h2>{{ avg_response }} ms</h2></div></div></div>
+</div>
+<h5>Provider Usage</h5>
+<table class="table table-sm bg-white shadow-sm mb-4">
+    <thead><tr><th>Provider</th><th>Count</th><th>Avg Time (ms)</th></tr></thead>
+    <tbody>{% for p in provider_stats %}<tr><td>{{ p.provider|default:"unknown" }}</td><td>{{ p.count }}</td><td>{{ p.avg_time|floatformat:0 }}</td></tr>{% empty %}<tr><td colspan="3">No data yet.</td></tr>{% endfor %}</tbody>
+</table>
+<h5>Top Topics (Keywords)</h5>
+<div class="d-flex flex-wrap gap-2 mb-4">{% for word, count in top_topics %}<span class="badge bg-success">{{ word }} ({{ count }})</span>{% empty %}<span class="text-muted">No data yet.</span>{% endfor %}</div>
+<h5>Recent Queries</h5>
+<table class="table table-sm bg-white shadow-sm">
+    <thead><tr><th>User</th><th>Query</th><th>Provider</th><th>Time</th></tr></thead>
+    <tbody>{% for log in recent_logs %}<tr><td>{{ log.user.username|default:"anon" }}</td><td>{{ log.query|truncatechars:60 }}</td><td>{{ log.provider }}</td><td>{{ log.response_time_ms }}ms</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Edit{% else %}Add{% endif %} Listing{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card auth-card"><div class="card-body p-4">
+            <h2 class="page-heading"><i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %}"></i> {% if object %}Edit{% else %}Add{% endif %} Crop Listing</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field.errors }}
+                    {{ field }}
+                </div>
+                {% endfor %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Save Listing</button>
+                    <a href="{% url 'marketplace:listing_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}AI Assistant{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-robot"></i> AgriNova AI Assistant</h4>
+            </div>
+            <div class="card-body" style="height: 500px; display: flex; flex-direction: column;">
+                <div id="chat-page-messages" class="chat-messages flex-grow-1 mb-3" style="max-height: none;">
+                    <div class="chat-msg bot">Hello! Ask me about farming, crops, fertilizers, or how to use AgriNova.</div>
+                </div>
+                {% if user.is_authenticated %}
+                <div class="chat-input-area">
+                    <input type="text" id="chat-page-input" class="form-control" placeholder="Type your question..." maxlength="500">
+                    <button id="chat-page-send" class="btn btn-success"><i class="bi bi-send"></i> Send</button>
+                </div>
+                {% else %}
+                <p class="text-center"><a href="{% url 'accounts:login' %}">Login</a> to use the chatbot.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    const input = document.getElementById('chat-page-input');
+    const sendBtn = document.getElementById('chat-page-send');
+    const messages = document.getElementById('chat-page-messages');
+    if (!input) return;
+    let history = [];
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+    function renderSafeMarkdown(text) {
+        if (!text) return '';
+        let escaped = escapeHtml(text);
+        // Headings
+        escaped = escaped.replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-2 mb-1">$1</h6>');
+        escaped = escaped.replace(/^## (.*$)/gim, '<h5 class="fw-bold mt-2 mb-1">$1</h5>');
+        escaped = escaped.replace(/^# (.*$)/gim, '<h4 class="fw-bold mt-2 mb-1">$1</h4>');
+        // Bold and Italic
+        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Bullet list items
+        escaped = escaped.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ms-3">$1</li>');
+        // Line breaks
+        escaped = escaped.replace(/\n/g, '<br>');
+        return escaped;
+    }
+    function addMsg(text, type) {
+        const d = document.createElement('div');
+        d.className = 'chat-msg ' + type;
+        if (type === 'bot') {
+            d.innerHTML = renderSafeMarkdown(text);
+        } else {
+            d.textContent = text;
+        }
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function getCsrf() {
+        const c = document.cookie.split(';').find(x => x.trim().startsWith('csrftoken='));
+        return c ? c.split('=')[1] : '';
+    }
+    async function send() {
+        const text = input.value.trim();
+        if (!text) return;
+        addMsg(text, 'user');
+        input.value = '';
+        history.push({role:'user', content:text});
+        sendBtn.disabled = true;
+        try {
+            const r = await fetch('/chatbot/api/', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+                body: JSON.stringify({message:text, history:history})
+            });
+            const data = await r.json();
+            if (r.ok) { addMsg(data.response, 'bot'); history.push({role:'assistant', content:data.response}); }
+            else addMsg(data.error || 'Error', 'error');
+        } catch(e) { addMsg('Network error', 'error'); }
+        sendBtn.disabled = false;
+    }
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keypress', e => { if(e.key==='Enter') send(); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Cart{% endblock %}
+{% block content %}
+<h1>Shopping Cart</h1>
+{% if cart %}
+<table class="table table-hover bg-white rounded shadow-sm">
+    <thead><tr><th>Crop</th><th>Price</th><th>Quantity</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for item in cart %}
+    <tr>
+        <td>{{ item.listing.crop.name }}</td>
+        <td>₹{{ item.price }}/{{ item.listing.unit }}</td>
+        <td>
+            <form method="post" action="{% url 'orders:cart_update' item.listing.id %}" class="d-flex gap-1">
+                {% csrf_token %}
+                <input type="number" name="quantity" value="{{ item.quantity }}" min="0.01" step="0.01" class="form-control form-control-sm w-auto">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Update</button>
+            </form>
+        </td>
+        <td>₹{{ item.line_total }}</td>
+        <td><a href="{% url 'orders:cart_remove' item.listing.id %}" class="btn btn-sm btn-outline-danger">Remove</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><th colspan="3">Total</th><th>₹{{ cart.total }}</th><th></th></tr></tfoot>
+</table>
+<a href="{% url 'orders:checkout' %}" class="btn btn-success btn-lg">Proceed to Checkout</a>
+{% else %}
+<div class="alert alert-info">Your cart is empty. <a href="{% url 'marketplace:listing_list' %}">Browse marketplace</a></div>
+{% endif %}
+{% endblock %}

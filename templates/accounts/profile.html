@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card auth-card">
+            <div class="card-body p-4">
+                <h2 class="page-heading"><i class="bi bi-person-gear"></i> My Profile</h2>
+                {% if user.profile_photo %}
+                <div class="text-center mb-3">
+                    <img src="{{ user.profile_photo.url }}" alt="Profile" class="profile-photo-preview">
+                </div>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field.errors }}
+                        {{ field }}
+                        {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text }}</small>{% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

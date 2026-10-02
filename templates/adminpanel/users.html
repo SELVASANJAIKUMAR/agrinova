@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<h1>Manage Users</h1>
+<table class="table table-hover bg-white shadow-sm">
+    <thead><tr><th>Username</th><th>Email</th><th>District</th><th>Seller</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+        <td>{{ u.username }}</td><td>{{ u.email }}</td><td>{{ u.district|default:"—" }}</td>
+        <td>{% if u.is_listing_as_seller %}Yes{% else %}No{% endif %}</td>
+        <td>{% if u.is_active_account %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Disabled</span>{% endif %}</td>
+        <td>
+            <form method="post" class="d-inline">{% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                {% if u.is_active_account %}
+                <button name="action" value="disable" class="btn btn-sm btn-outline-danger">Disable</button>
+                {% else %}
+                <button name="action" value="enable" class="btn btn-sm btn-outline-success">Enable</button>
+                {% endif %}
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

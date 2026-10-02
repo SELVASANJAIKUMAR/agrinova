@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ listing.crop.name }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-5">
+        {% if listing.display_image %}
+        <img src="{{ listing.display_image }}" class="img-fluid rounded shadow" alt="{{ listing.crop.name }}" style="border-radius: var(--agri-radius);">
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1 class="page-heading"><i class="bi bi-box-seam"></i> {{ listing.crop.name }}</h1>
+        <p class="text-muted"><i class="bi bi-person me-1"></i>Listed by {{ listing.seller.username }} &middot; <i class="bi bi-geo-alt me-1"></i>{{ listing.district }}</p>
+        <h3 class="text-success fw-bold">₹{{ listing.price_per_unit }} / {{ listing.unit }}</h3>
+        <p><strong>Available:</strong> {{ listing.quantity }} {{ listing.unit }}</p>
+        <p>{{ listing.description|default:"No description provided." }}</p>
+
+        {% if user.is_authenticated and user != listing.seller %}
+        <form method="post" action="{% url 'orders:cart_add' listing.pk %}" class="d-flex gap-2 align-items-center mb-3">
+            {% csrf_token %}
+            <input type="number" name="quantity" value="1" min="0.01" max="{{ listing.quantity }}" step="0.01" class="form-control w-auto">
+            <button type="submit" class="btn btn-success"><i class="bi bi-cart-plus me-1"></i>Add to Cart</button>
+        </form>
+        {% elif not user.is_authenticated %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-success"><i class="bi bi-box-arrow-in-right me-1"></i>Login to Buy</a>
+        {% endif %}
+
+        {% if user == listing.seller or user.is_staff %}
+        <div class="mt-3 d-flex gap-2">
+            <a href="{% url 'marketplace:listing_edit' listing.pk %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
+            <a href="{% url 'marketplace:listing_delete' listing.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Sales History{% endblock %}
+{% block content %}
+<h1>My Sales</h1>
+<table class="table table-hover bg-white shadow-sm">
+    <thead><tr><th>Order</th><th>Crop</th><th>Buyer</th><th>Qty</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for sale in sales %}
+    <tr>
+        <td>#{{ sale.order.id }}</td>
+        <td>{{ sale.listing.crop.name }}</td>
+        <td>{{ sale.order.buyer.username }}</td>
+        <td>{{ sale.quantity }}</td>
+        <td>₹{{ sale.line_total }}</td>
+        <td>{{ sale.order.get_status_display }}</td>
+        <td>
+            <form method="post" action="{% url 'orders:status_update' sale.order.id %}" class="d-flex gap-1">
+                {% csrf_token %}
+                <select name="status" class="form-select form-select-sm">
+                    {% for val, label in sale.order.StatusChoices|default_if_none:"" %}{% endfor %}
+                    <option value="confirmed" {% if sale.order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="shipped" {% if sale.order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                    <option value="delivered" {% if sale.order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-success">Update</button>
+            </form>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="text-center">No sales yet.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
