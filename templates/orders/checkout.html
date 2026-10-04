@@ -13,8 +13,20 @@
     {% endfor %}
     </ul>
     <h4>Total: ₹{{ cart.total }}</h4>
-    <form method="post">{% csrf_token %}
-        <button type="submit" class="btn btn-success btn-lg">Place Order</button>
-    </form>
+    <form method="post">
+    {% csrf_token %}
+
+    <h5 class="mt-3">Delivery Address</h5>
+
+    <input type="text" name="delivery_name" class="form-control mb-2" placeholder="Full Name" required>
+    <input type="text" name="delivery_phone" class="form-control mb-2" placeholder="Mobile Number" required>
+    <textarea name="delivery_address" class="form-control mb-2" placeholder="House No, Street, Area" required></textarea>
+    <input type="text" name="delivery_city" class="form-control mb-2" placeholder="City / Village" required>
+    <input type="text" name="delivery_district" class="form-control mb-2" placeholder="District" required>
+    <input type="text" name="delivery_state" class="form-control mb-2" value="Tamil Nadu" required>
+    <input type="text" name="delivery_pincode" class="form-control mb-3" placeholder="Pincode" required>
+
+    <button type="submit" class="btn btn-success btn-lg">Place Order</button>
+</form>
 </div></div>
 {% endblock %}

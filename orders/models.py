@@ -6,12 +6,21 @@ from django.db import models
 from agrinova.constants import ORDER_STATUS_CHOICES, PAYMENT_STATUS_CHOICES
 
 
+
+
 class Order(models.Model):
     buyer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='orders',
     )
+    delivery_name = models.CharField(max_length=100)
+    delivery_phone = models.CharField(max_length=15)
+    delivery_address = models.TextField()
+    delivery_city = models.CharField(max_length=100)
+    delivery_district = models.CharField(max_length=100)
+    delivery_state = models.CharField(max_length=100, default='Tamil Nadu')
+    delivery_pincode = models.CharField(max_length=10)
     status = models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))

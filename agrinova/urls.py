@@ -18,6 +18,7 @@ urlpatterns = [
     path('matching/', include('matching.urls')),
     path('dashboard/', include('dashboard.urls')),
     path('adminpanel/', include('adminpanel.urls')),
+    path('reports/', include('reports.urls')),
 ]
 
 urlpatterns += [re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT})]

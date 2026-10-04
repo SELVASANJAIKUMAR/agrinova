@@ -1,0 +1,49 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<h1>AgriNova Reports</h1>
+
+<p>Select a report to download as PDF.</p>
+
+<div style="margin-top: 25px;">
+
+    <p>
+        <a href="{% url 'reports:user_report' %}" class="button">
+            User Report
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'reports:buy_report' %}" class="button">
+            Buy Report
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'reports:sell_report' %}" class="button">
+            Sell Report
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'reports:chatbot_report' %}" class="button">
+            AI Chatbot Report
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'reports:forecast_report' %}" class="button">
+            Price Forecast Report
+        </a>
+    </p>
+
+    <p>
+        <a href="{% url 'reports:combined_report' %}" class="button">
+            Combined Report
+        </a>
+    </p>
+
+</div>
+
+{% endblock %}

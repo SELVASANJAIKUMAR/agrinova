@@ -1,10 +1,10 @@
+
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, View
 
 from marketplace.models import Listing
@@ -24,13 +24,21 @@ def cart_add(request, listing_id):
     listing = get_object_or_404(Listing, id=listing_id, is_active=True)
     cart = Cart(request)
     quantity = Decimal(request.POST.get('quantity', '1'))
+
     if quantity <= 0:
         messages.error(request, 'Quantity must be greater than zero.')
     elif quantity > listing.quantity:
-        messages.error(request, f'Only {listing.quantity} {listing.unit} available.')
+        messages.error(
+            request,
+            f'Only {listing.quantity} {listing.unit} available.'
+        )
     else:
         cart.add(listing, quantity)
-        messages.success(request, f'Added {listing.crop.name} to cart.')
+        messages.success(
+            request,
+            f'Added {listing.crop.name} to cart.'
+        )
+
     return redirect('marketplace:listing_detail', pk=listing_id)
 
 
@@ -55,18 +63,37 @@ class CheckoutView(LoginRequiredMixin, View):
 
     def get(self, request):
         cart = Cart(request)
+
         if len(cart) == 0:
             messages.warning(request, 'Your cart is empty.')
             return redirect('marketplace:listing_list')
-        return render(request, self.template_name, {'cart': cart})
+
+        return render(
+            request,
+            self.template_name,
+            {'cart': cart}
+        )
 
     def post(self, request):
         cart = Cart(request)
+
         if len(cart) == 0:
             messages.warning(request, 'Your cart is empty.')
             return redirect('marketplace:listing_list')
 
-        order = Order.objects.create(buyer=request.user, status='pending', payment_status='unpaid')
+        order = Order.objects.create(
+            buyer=request.user,
+            status='pending',
+            payment_status='unpaid',
+            delivery_name=request.POST.get('delivery_name', ''),
+            delivery_phone=request.POST.get('delivery_phone', ''),
+            delivery_address=request.POST.get('delivery_address', ''),
+            delivery_city=request.POST.get('delivery_city', ''),
+            delivery_district=request.POST.get('delivery_district', ''),
+            delivery_state=request.POST.get('delivery_state', ''),
+            delivery_pincode=request.POST.get('delivery_pincode', ''),
+        )
+
         for item in cart:
             OrderItem.objects.create(
                 order=order,
@@ -74,29 +101,61 @@ class CheckoutView(LoginRequiredMixin, View):
                 quantity=item['quantity'],
                 unit_price=item['price'],
             )
+
         order.calculate_total()
         order.save()
+
         request.session['pending_order_id'] = order.id
-        return redirect('orders:payment', order_id=order.id)
+
+        return redirect(
+            'orders:payment',
+            order_id=order.id
+        )
 
 
 class MockPaymentView(LoginRequiredMixin, View):
     template_name = 'orders/payment.html'
 
     def get(self, request, order_id):
-        order = get_object_or_404(Order, id=order_id, buyer=request.user, payment_status='unpaid')
-        return render(request, self.template_name, {'order': order})
+        order = get_object_or_404(
+            Order,
+            id=order_id,
+            buyer=request.user,
+            payment_status='unpaid'
+        )
+
+        return render(
+            request,
+            self.template_name,
+            {'order': order}
+        )
 
     def post(self, request, order_id):
-        order = get_object_or_404(Order, id=order_id, buyer=request.user, payment_status='unpaid')
+        order = get_object_or_404(
+            Order,
+            id=order_id,
+            buyer=request.user,
+            payment_status='unpaid'
+        )
+
         order.payment_status = 'paid_test'
         order.status = 'confirmed'
         order.save()
+
         cart = Cart(request)
         cart.clear()
+
         request.session.pop('pending_order_id', None)
-        messages.success(request, 'Order placed — payment simulated successfully!')
-        return redirect('orders:confirmation', order_id=order.id)
+
+        messages.success(
+            request,
+            'Order placed — payment simulated successfully!'
+        )
+
+        return redirect(
+            'orders:confirmation',
+            order_id=order.id
+        )
 
 
 class OrderConfirmationView(LoginRequiredMixin, DetailView):
@@ -106,7 +165,11 @@ class OrderConfirmationView(LoginRequiredMixin, DetailView):
     context_object_name = 'order'
 
     def get_queryset(self):
-        return Order.objects.filter(buyer=self.request.user).prefetch_related('items__listing__crop')
+        return Order.objects.filter(
+            buyer=self.request.user
+        ).prefetch_related(
+            'items__listing__crop'
+        )
 
 
 class OrderHistoryView(LoginRequiredMixin, ListView):
@@ -115,7 +178,11 @@ class OrderHistoryView(LoginRequiredMixin, ListView):
     context_object_name = 'orders'
 
     def get_queryset(self):
-        return Order.objects.filter(buyer=self.request.user).prefetch_related('items__listing__crop')
+        return Order.objects.filter(
+            buyer=self.request.user
+        ).prefetch_related(
+            'items__listing__crop'
+        )
 
 
 class SalesHistoryView(LoginRequiredMixin, ListView):
@@ -126,24 +193,61 @@ class SalesHistoryView(LoginRequiredMixin, ListView):
         return OrderItem.objects.filter(
             listing__seller=self.request.user,
             order__payment_status='paid_test',
-        ).select_related('order', 'listing__crop', 'order__buyer').order_by('-order__created_at')
+        ).select_related(
+            'order',
+            'listing__crop',
+            'order__buyer'
+        ).order_by(
+            '-order__created_at'
+        )
 
 
-class OrderStatusUpdateView(LoginRequiredMixin, UserPassesTestMixin, View):
+class OrderStatusUpdateView(
+    LoginRequiredMixin,
+    UserPassesTestMixin,
+    View
+):
     """Allow seller or staff to update order status."""
 
     def test_func(self):
-        order = get_object_or_404(Order, id=self.kwargs['order_id'])
+        order = get_object_or_404(
+            Order,
+            id=self.kwargs['order_id']
+        )
+
         if self.request.user.is_staff:
             return True
-        return order.items.filter(listing__seller=self.request.user).exists()
+
+        return order.items.filter(
+            listing__seller=self.request.user
+        ).exists()
 
     def post(self, request, order_id):
-        order = get_object_or_404(Order, id=order_id)
+        order = get_object_or_404(
+            Order,
+            id=order_id
+        )
+
         new_status = request.POST.get('status')
-        valid_statuses = [s[0] for s in Order._meta.get_field('status').choices]
+
+        valid_statuses = [
+            s[0]
+            for s in Order._meta.get_field('status').choices
+        ]
+
         if new_status in valid_statuses:
             order.status = new_status
             order.save()
-            messages.success(request, f'Order status updated to {order.get_status_display()}.')
-        return redirect(request.META.get('HTTP_REFERER', 'dashboard:home'))
+
+            messages.success(
+                request,
+                f'Order status updated to '
+                f'{order.get_status_display()}.'
+            )
+
+        return redirect(
+            request.META.get(
+                'HTTP_REFERER',
+                'dashboard:home'
+            )
+        )

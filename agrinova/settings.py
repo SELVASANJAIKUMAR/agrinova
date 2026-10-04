@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'matching',
     'dashboard',
     'adminpanel',
+    'reports',
 ]
 
 MIDDLEWARE = [
