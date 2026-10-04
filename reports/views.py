@@ -1145,13 +1145,48 @@ def forecast_report(request):
     styles = get_styles()
     story = []
 
-    records = (
+    # --------------------------------------------------------
+    # SUMMARY COUNTS
+    # --------------------------------------------------------
+
+    total_records = PriceRecord.objects.count()
+
+    different_crops = (
         PriceRecord.objects
-        .all()
-        .order_by("-date", "crop", "district")
+        .values("crop")
+        .distinct()
+        .count()
     )
 
-    total_records = records.count()
+    different_districts = (
+        PriceRecord.objects
+        .values("district")
+        .distinct()
+        .count()
+    )
+
+    synthetic_records = PriceRecord.objects.filter(
+        is_synthetic=True
+    ).count()
+
+    market_records = PriceRecord.objects.filter(
+        is_synthetic=False
+    ).count()
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # Do NOT load all price records into the PDF.
+    # Render has limited memory.
+    #
+    # Summary = all records
+    # Detailed table = latest 200 records
+    # --------------------------------------------------------
+
+    records = (
+        PriceRecord.objects
+        .select_related("crop")
+        .order_by("-date", "-id")[:200]
+    )
 
     report_title(
         story,
@@ -1164,14 +1199,21 @@ def forecast_report(request):
         summary_boxes(
             [
                 ("Total Price Records", total_records),
-                (
-                    "Different Crops",
-                    records.values("crop").distinct().count(),
-                ),
-                (
-                    "Different Districts",
-                    records.values("district").distinct().count(),
-                ),
+                ("Different Crops", different_crops),
+                ("Different Districts", different_districts),
+                ("Demo / Synthetic", synthetic_records),
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 10))
+
+    story.append(
+        summary_boxes(
+            [
+                ("Market Data", market_records),
+                ("Detailed Records", min(total_records, 200)),
             ],
             styles,
         )
@@ -1179,15 +1221,31 @@ def forecast_report(request):
 
     story.append(Spacer(1, 12))
 
+    # --------------------------------------------------------
+    # PRICE DATA DETAILS
+    # --------------------------------------------------------
+
     story.append(
         Paragraph(
-            "Price Data Details",
+            "Latest Price Data Details",
             styles["SectionTitle"],
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "The summary statistics above cover all price records "
+            "available in the AgriNova database. To keep the PDF "
+            "efficient and suitable for the deployed Render server, "
+            "the detailed table below contains only the latest "
+            "200 price records.",
+            styles["BodyTextReport"],
         )
     )
 
     data = [
         [
+            "S.No.",
             "Date",
             "Crop",
             "District",
@@ -1196,7 +1254,7 @@ def forecast_report(request):
         ]
     ]
 
-    for record in records:
+    for index, record in enumerate(records, start=1):
 
         date_value = getattr(
             record,
@@ -1213,14 +1271,20 @@ def forecast_report(request):
         crop = getattr(
             record,
             "crop",
-            "-"
+            None,
+        )
+
+        crop_name = (
+            crop.name
+            if crop
+            else "-"
         )
 
         district = getattr(
             record,
             "district",
             "-"
-        )
+        ) or "-"
 
         price = getattr(
             record,
@@ -1242,10 +1306,11 @@ def forecast_report(request):
 
         data.append(
             [
+                index,
                 date_text,
-                crop,
+                crop_name,
                 district,
-                f"₹{price}",
+                f"Rs. {price}",
                 data_type,
             ]
         )
@@ -1254,11 +1319,12 @@ def forecast_report(request):
         make_table(
             data,
             [
-                30 * mm,
-                40 * mm,
-                45 * mm,
-                30 * mm,
+                13 * mm,
+                27 * mm,
                 35 * mm,
+                38 * mm,
+                30 * mm,
+                37 * mm,
             ],
             styles,
             small=True,
@@ -1266,6 +1332,10 @@ def forecast_report(request):
     )
 
     story.append(Spacer(1, 12))
+
+    # --------------------------------------------------------
+    # FORECASTING SUMMARY
+    # --------------------------------------------------------
 
     story.append(
         Paragraph(
@@ -1276,11 +1346,23 @@ def forecast_report(request):
 
     story.append(
         Paragraph(
-            "The Price Forecast module uses agricultural price "
-            "records to support historical price analysis and "
-            "future price forecasting. The data type is displayed "
-            "separately so administrators can distinguish "
-            "simulated/demo records from market data.",
+            f"The AgriNova Price Forecast module currently contains "
+            f"{total_records} price records covering "
+            f"{different_crops} crops and "
+            f"{different_districts} districts. "
+            f"{synthetic_records} records are simulated/demo data "
+            f"and {market_records} records are marked as market data. "
+            "These records support historical price analysis and "
+            "future agricultural price forecasting.",
+            styles["BodyTextReport"],
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Note: The detailed table is intentionally limited to "
+            "the latest 200 records so that the report can be "
+            "generated reliably on the deployed application.",
             styles["BodyTextReport"],
         )
     )
@@ -1301,6 +1383,10 @@ def combined_report(request):
 
     User = get_user_model()
 
+    # --------------------------------------------------------
+    # DATABASE SUMMARY
+    # --------------------------------------------------------
+
     total_users = User.objects.count()
 
     total_orders = Order.objects.count()
@@ -1317,6 +1403,83 @@ def combined_report(request):
     total_chatbot_queries = ChatLog.objects.count()
 
     total_price_records = PriceRecord.objects.count()
+
+    # --------------------------------------------------------
+    # USER STATISTICS
+    # --------------------------------------------------------
+
+    active_users = User.objects.filter(
+        is_active=True
+    ).count()
+
+    staff_users = User.objects.filter(
+        is_staff=True
+    ).count()
+
+    # --------------------------------------------------------
+    # ORDER STATISTICS
+    # --------------------------------------------------------
+
+    pending_orders = Order.objects.filter(
+        status="pending"
+    ).count()
+
+    completed_orders = Order.objects.filter(
+        status="completed"
+    ).count()
+
+    # --------------------------------------------------------
+    # LISTING STATISTICS
+    # --------------------------------------------------------
+
+    active_listings = Listing.objects.filter(
+        is_active=True
+    ).count()
+
+    inactive_listings = (
+        total_listings - active_listings
+    )
+
+    # --------------------------------------------------------
+    # CHATBOT STATISTICS
+    # --------------------------------------------------------
+
+    unique_chat_users = (
+        ChatLog.objects
+        .values("user")
+        .distinct()
+        .count()
+    )
+
+    # --------------------------------------------------------
+    # FORECAST STATISTICS
+    # --------------------------------------------------------
+
+    crop_count = (
+        PriceRecord.objects
+        .values("crop")
+        .distinct()
+        .count()
+    )
+
+    district_count = (
+        PriceRecord.objects
+        .values("district")
+        .distinct()
+        .count()
+    )
+
+    synthetic_records = PriceRecord.objects.filter(
+        is_synthetic=True
+    ).count()
+
+    market_records = PriceRecord.objects.filter(
+        is_synthetic=False
+    ).count()
+
+    # --------------------------------------------------------
+    # REPORT TITLE
+    # --------------------------------------------------------
 
     report_title(
         story,
@@ -1366,8 +1529,22 @@ def combined_report(request):
     story.append(
         summary_boxes(
             [
-                ("Purchase / Sales Value", f"₹{total_sales}"),
-                ("Price Records", total_price_records),
+                (
+                    "Purchase / Sales Value",
+                    f"Rs. {total_sales}",
+                ),
+                (
+                    "Price Records",
+                    total_price_records,
+                ),
+                (
+                    "Active Users",
+                    active_users,
+                ),
+                (
+                    "Active Listings",
+                    active_listings,
+                ),
             ],
             styles,
         )
@@ -1376,7 +1553,7 @@ def combined_report(request):
     story.append(PageBreak())
 
     # --------------------------------------------------------
-    # USER MODULE
+    # 1. USER MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1385,14 +1562,6 @@ def combined_report(request):
             styles["SectionTitle"],
         )
     )
-
-    active_users = User.objects.filter(
-        is_active=True
-    ).count()
-
-    staff_users = User.objects.filter(
-        is_staff=True
-    ).count()
 
     story.append(
         Paragraph(
@@ -1403,8 +1572,28 @@ def combined_report(request):
         )
     )
 
+    user_data = [
+        ["Metric", "Value"],
+        ["Registered Users", total_users],
+        ["Active Users", active_users],
+        ["Staff Users", staff_users],
+    ]
+
+    story.append(
+        make_table(
+            user_data,
+            [
+                90 * mm,
+                65 * mm,
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
     # --------------------------------------------------------
-    # BUY MODULE
+    # 2. BUY MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1414,26 +1603,39 @@ def combined_report(request):
         )
     )
 
-    pending_orders = Order.objects.filter(
-        status="pending"
-    ).count()
-
-    completed_orders = Order.objects.filter(
-        status="completed"
-    ).count()
-
     story.append(
         Paragraph(
             f"The platform has recorded {total_orders} orders "
-            f"with a total value of ₹{total_sales}. "
+            f"with a total recorded value of Rs. {total_sales}. "
             f"There are {pending_orders} pending orders and "
             f"{completed_orders} completed orders.",
             styles["BodyTextReport"],
         )
     )
 
+    order_data = [
+        ["Metric", "Value"],
+        ["Total Orders", total_orders],
+        ["Total Purchase / Sales Value", f"Rs. {total_sales}"],
+        ["Pending Orders", pending_orders],
+        ["Completed Orders", completed_orders],
+    ]
+
+    story.append(
+        make_table(
+            order_data,
+            [
+                90 * mm,
+                65 * mm,
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
     # --------------------------------------------------------
-    # SELL MODULE
+    # 3. SELL MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1443,21 +1645,38 @@ def combined_report(request):
         )
     )
 
-    active_listings = Listing.objects.filter(
-        is_active=True
-    ).count()
-
     story.append(
         Paragraph(
             f"The marketplace contains {total_listings} "
             f"product listings. "
-            f"{active_listings} listings are currently active.",
+            f"{active_listings} listings are currently active "
+            f"and {inactive_listings} are inactive.",
             styles["BodyTextReport"],
         )
     )
 
+    listing_data = [
+        ["Metric", "Value"],
+        ["Total Listings", total_listings],
+        ["Active Listings", active_listings],
+        ["Inactive Listings", inactive_listings],
+    ]
+
+    story.append(
+        make_table(
+            listing_data,
+            [
+                90 * mm,
+                65 * mm,
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
     # --------------------------------------------------------
-    # CHATBOT MODULE
+    # 4. AI CHATBOT MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1467,26 +1686,38 @@ def combined_report(request):
         )
     )
 
-    unique_chat_users = (
-        ChatLog.objects
-        .values("user")
-        .distinct()
-        .count()
-    )
-
     story.append(
         Paragraph(
             f"The AI Agriculture Assistant has recorded "
             f"{total_chatbot_queries} queries from "
             f"{unique_chat_users} users. "
-            f"These interactions support agricultural guidance "
-            f"and marketplace assistance.",
+            "These interactions support agricultural guidance "
+            "and marketplace assistance.",
             styles["BodyTextReport"],
         )
     )
 
+    chatbot_data = [
+        ["Metric", "Value"],
+        ["Total Chatbot Queries", total_chatbot_queries],
+        ["Unique Users", unique_chat_users],
+    ]
+
+    story.append(
+        make_table(
+            chatbot_data,
+            [
+                90 * mm,
+                65 * mm,
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
     # --------------------------------------------------------
-    # FORECAST MODULE
+    # 5. PRICE FORECAST MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1496,32 +1727,42 @@ def combined_report(request):
         )
     )
 
-    crop_count = (
-        PriceRecord.objects
-        .values("crop")
-        .distinct()
-        .count()
-    )
-
-    district_count = (
-        PriceRecord.objects
-        .values("district")
-        .distinct()
-        .count()
-    )
-
     story.append(
         Paragraph(
-            f"The price forecasting module contains "
+            f"The Price Forecasting module contains "
             f"{total_price_records} price records covering "
             f"{crop_count} crops and "
-            f"{district_count} districts.",
+            f"{district_count} districts. "
+            f"{synthetic_records} records are simulated/demo data "
+            f"and {market_records} records are marked as market data.",
             styles["BodyTextReport"],
         )
     )
 
+    forecast_data = [
+        ["Metric", "Value"],
+        ["Total Price Records", total_price_records],
+        ["Different Crops", crop_count],
+        ["Different Districts", district_count],
+        ["Simulated / Demo Records", synthetic_records],
+        ["Market Data Records", market_records],
+    ]
+
+    story.append(
+        make_table(
+            forecast_data,
+            [
+                90 * mm,
+                65 * mm,
+            ],
+            styles,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
     # --------------------------------------------------------
-    # OVERALL STATISTICS TABLE
+    # OVERALL PLATFORM STATISTICS
     # --------------------------------------------------------
 
     story.append(
@@ -1555,7 +1796,7 @@ def combined_report(request):
         [
             "Orders",
             "Total Value",
-            f"₹{total_sales}",
+            f"Rs. {total_sales}",
         ],
         [
             "Listings",
