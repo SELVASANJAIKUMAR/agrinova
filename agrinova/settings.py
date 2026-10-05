@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     'dashboard',
     'adminpanel',
     'reports',
+    'cloudinary_storage',
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -224,3 +226,18 @@ RAG_EMBEDDING_PROVIDER = config('RAG_EMBEDDING_PROVIDER', default='local')
 
 # Session cart key
 CART_SESSION_ID = 'agrinova_cart'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('jgbe6qnt', default=''),
+    'API_KEY': config('843334343498994', default=''),
+    'API_SECRET': config('ugRJnoPqz_MMTymAT69uJm7LF70', default=''),
+}
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
