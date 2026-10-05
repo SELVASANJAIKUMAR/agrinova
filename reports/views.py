@@ -15,12 +15,12 @@ from io import BytesIO
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import render
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -31,10 +31,9 @@ from reportlab.platypus import (
     Table,
     TableStyle,
     PageBreak,
-    KeepTogether,
 )
 
-from orders.models import Order, OrderItem
+from orders.models import Order
 from marketplace.models import Listing
 from chatbot.models import ChatLog
 from forecasting.models import PriceRecord
@@ -121,16 +120,22 @@ def paragraph(text, style):
 def make_table(data, widths, styles, small=False):
     converted = []
 
-    cell_style = styles["TinyText"] if small else styles["SmallText"]
+    cell_style = (
+        styles["TinyText"]
+        if small
+        else styles["SmallText"]
+    )
 
-    for row_index, row in enumerate(data):
+    for row in data:
         new_row = []
 
         for cell in row:
             if isinstance(cell, Paragraph):
                 new_row.append(cell)
             else:
-                new_row.append(paragraph(cell, cell_style))
+                new_row.append(
+                    paragraph(cell, cell_style)
+                )
 
         converted.append(new_row)
 
@@ -203,7 +208,10 @@ def make_table(data, widths, styles, small=False):
                     "ROWBACKGROUNDS",
                     (0, 1),
                     (-1, -1),
-                    [colors.white, colors.HexColor("#F5F5F5")],
+                    [
+                        colors.white,
+                        colors.HexColor("#F5F5F5"),
+                    ],
                 ),
             ]
         )
@@ -227,7 +235,9 @@ def summary_boxes(items, styles):
 
     table = Table(
         [data],
-        colWidths=[(180 * mm) / len(items)] * len(items),
+        colWidths=[
+            (180 * mm) / len(items)
+        ] * len(items),
     )
 
     table.setStyle(
@@ -283,34 +293,32 @@ def report_header_footer(canvas, doc):
 
     width, height = A4
 
-    # Header
     canvas.setFont("Helvetica-Bold", 9)
     canvas.drawString(
         doc.leftMargin,
         height - 15 * mm,
-        "AgriNova"
+        "AgriNova",
     )
 
     canvas.setFont("Helvetica", 7)
     canvas.drawRightString(
         width - doc.rightMargin,
         height - 15 * mm,
-        "Agricultural Marketplace & AI Platform"
+        "Agricultural Marketplace & AI Platform",
     )
 
-    # Footer
     canvas.setFont("Helvetica", 7)
 
     canvas.drawString(
         doc.leftMargin,
         10 * mm,
-        "AgriNova Admin Report"
+        "AgriNova Admin Report",
     )
 
     canvas.drawRightString(
         width - doc.rightMargin,
         10 * mm,
-        f"Page {doc.page}"
+        f"Page {doc.page}",
     )
 
     canvas.restoreState()
@@ -390,8 +398,12 @@ def user_report(request):
     users = User.objects.all().order_by("-date_joined")
 
     total_users = users.count()
-    active_users = users.filter(is_active=True).count()
-    staff_users = users.filter(is_staff=True).count()
+    active_users = users.filter(
+        is_active=True
+    ).count()
+    staff_users = users.filter(
+        is_staff=True
+    ).count()
 
     report_title(
         story,
@@ -472,9 +484,10 @@ def user_report(request):
 
     story.append(
         Paragraph(
-            f"AgriNova currently has {total_users} registered users. "
-            f"{active_users} accounts are active and "
-            f"{staff_users} users have administrative privileges.",
+            f"AgriNova currently has {total_users} "
+            f"registered users. {active_users} accounts "
+            f"are active and {staff_users} users have "
+            f"administrative privileges.",
             styles["BodyTextReport"],
         )
     )
@@ -504,7 +517,9 @@ def buy_report(request):
     orders = (
         Order.objects
         .select_related("buyer")
-        .prefetch_related("items__listing")
+        .prefetch_related(
+            "items__listing__crop"
+        )
         .order_by("-id")
     )
 
@@ -536,9 +551,15 @@ def buy_report(request):
         summary_boxes(
             [
                 ("Total Orders", total_orders),
-                ("Purchase Value", f"₹{total_purchase_value}"),
+                (
+                    "Purchase Value",
+                    f"₹{total_purchase_value}",
+                ),
                 ("Pending Orders", pending_orders),
-                ("Completed Orders", completed_orders),
+                (
+                    "Completed Orders",
+                    completed_orders,
+                ),
             ],
             styles,
         )
@@ -569,23 +590,31 @@ def buy_report(request):
     ]
 
     for order in orders:
-
         item_count = order.items.count()
 
         order_date = (
             order.created_at.strftime("%d-%m-%Y")
-            if hasattr(order, "created_at") and order.created_at
+            if hasattr(order, "created_at")
+            and order.created_at
             else "-"
         )
 
         order_data.append(
             [
                 f"#{order.id}",
-                getattr(order.buyer, "username", "-"),
+                getattr(
+                    order.buyer,
+                    "username",
+                    "-",
+                ),
                 order_date,
                 item_count,
                 f"₹{order.total_amount}",
-                getattr(order, "status", "-"),
+                getattr(
+                    order,
+                    "status",
+                    "-",
+                ),
             ]
         )
 
@@ -627,39 +656,66 @@ def buy_report(request):
     ]
 
     for order in orders:
-
         delivery_name = (
-            getattr(order, "delivery_name", "-")
+            getattr(
+                order,
+                "delivery_name",
+                "-",
+            )
             or "-"
         )
 
         delivery_phone = (
-            getattr(order, "delivery_phone", "-")
+            getattr(
+                order,
+                "delivery_phone",
+                "-",
+            )
             or "-"
         )
 
         delivery_address = (
-            getattr(order, "delivery_address", "-")
+            getattr(
+                order,
+                "delivery_address",
+                "-",
+            )
             or "-"
         )
 
         delivery_city = (
-            getattr(order, "delivery_city", "-")
+            getattr(
+                order,
+                "delivery_city",
+                "-",
+            )
             or "-"
         )
 
         delivery_district = (
-            getattr(order, "delivery_district", "-")
+            getattr(
+                order,
+                "delivery_district",
+                "-",
+            )
             or "-"
         )
 
         delivery_state = (
-            getattr(order, "delivery_state", "-")
+            getattr(
+                order,
+                "delivery_state",
+                "-",
+            )
             or "-"
         )
 
         delivery_pincode = (
-            getattr(order, "delivery_pincode", "-")
+            getattr(
+                order,
+                "delivery_pincode",
+                "-",
+            )
             or "-"
         )
 
@@ -729,17 +785,9 @@ def buy_report(request):
             )
 
             product_name = (
-                getattr(
-                    listing,
-                    "title",
-                    None,
-                )
-                or getattr(
-                    listing,
-                    "name",
-                    None,
-                )
-                or "-"
+                listing.crop.name
+                if listing and listing.crop
+                else "-"
             )
 
             seller = "-"
@@ -755,7 +803,7 @@ def buy_report(request):
                     seller = getattr(
                         seller_obj,
                         "username",
-                        "-"
+                        "-",
                     )
 
             quantity = getattr(
@@ -825,11 +873,12 @@ def buy_report(request):
 
     story.append(
         Paragraph(
-            f"This report contains {total_orders} purchase orders "
-            f"with a total recorded purchase value of "
-            f"₹{total_purchase_value}. "
-            f"The report also includes buyer delivery information "
-            f"and individual purchased product details.",
+            f"This report contains {total_orders} "
+            f"purchase orders with a total recorded "
+            f"purchase value of ₹{total_purchase_value}. "
+            f"The report also includes buyer delivery "
+            f"information and individual purchased "
+            f"product details.",
             styles["BodyTextReport"],
         )
     )
@@ -850,7 +899,10 @@ def sell_report(request):
 
     listings = (
         Listing.objects
-        .select_related("seller")
+        .select_related(
+            "seller",
+            "crop",
+        )
         .order_by("-id")
     )
 
@@ -907,18 +959,22 @@ def sell_report(request):
         seller = getattr(
             listing.seller,
             "username",
-            "-"
+            "-",
         )
 
+        # Correct product field:
+        # Listing -> CropCategory -> name
         product_name = (
-            getattr(listing, "title", None)
-            or getattr(listing, "name", None)
-            or "-"
+            listing.crop.name
+            if listing.crop
+            else "-"
         )
 
+        # Correct price field:
+        # Listing.price_per_unit
         price = getattr(
             listing,
-            "price",
+            "price_per_unit",
             0,
         )
 
@@ -931,7 +987,7 @@ def sell_report(request):
         district = getattr(
             listing,
             "district",
-            "-"
+            "-",
         )
 
         is_active = getattr(
@@ -948,7 +1004,11 @@ def sell_report(request):
                 f"₹{price}",
                 quantity,
                 district,
-                "Active" if is_active else "Inactive",
+                (
+                    "Active"
+                    if is_active
+                    else "Inactive"
+                ),
             ]
         )
 
@@ -980,10 +1040,10 @@ def sell_report(request):
 
     story.append(
         Paragraph(
-            f"AgriNova currently contains {total_listings} "
-            f"product listings. "
-            f"{active_listings} listings are active and available "
-            f"for marketplace activity.",
+            f"AgriNova currently contains "
+            f"{total_listings} product listings. "
+            f"{active_listings} listings are active "
+            f"and available for marketplace activity.",
             styles["BodyTextReport"],
         )
     )
@@ -1023,7 +1083,9 @@ def chatbot_report(request):
                 ("Total Queries", total_queries),
                 (
                     "Unique Users",
-                    messages.values("user").distinct().count(),
+                    messages.values(
+                        "user"
+                    ).distinct().count(),
                 ),
             ],
             styles,
@@ -1051,11 +1113,19 @@ def chatbot_report(request):
 
     for message in messages:
 
-        username = getattr(
-            message.user,
-            "username",
-            "-"
-        ) if getattr(message, "user", None) else "-"
+        username = (
+            getattr(
+                message.user,
+                "username",
+                "-",
+            )
+            if getattr(
+                message,
+                "user",
+                None,
+            )
+            else "-"
+        )
 
         date_value = getattr(
             message,
@@ -1064,26 +1134,47 @@ def chatbot_report(request):
         )
 
         date_text = (
-            date_value.strftime("%d-%m-%Y %H:%M")
+            date_value.strftime(
+                "%d-%m-%Y %H:%M"
+            )
             if date_value
             else "-"
         )
 
-        provider = getattr(
-            message,
-            "provider",
-            "-"
-        ) or "-"
+        provider = (
+            getattr(
+                message,
+                "provider",
+                "-",
+            )
+            or "-"
+        )
 
         query = (
-            getattr(message, "message", None)
-            or getattr(message, "query", None)
+            getattr(
+                message,
+                "message",
+                None,
+            )
+            or getattr(
+                message,
+                "query",
+                None,
+            )
             or "-"
         )
 
         response_text = (
-            getattr(message, "response", None)
-            or getattr(message, "answer", None)
+            getattr(
+                message,
+                "response",
+                None,
+            )
+            or getattr(
+                message,
+                "answer",
+                None,
+            )
             or "-"
         )
 
@@ -1123,10 +1214,11 @@ def chatbot_report(request):
 
     story.append(
         Paragraph(
-            f"The AgriNova Agriculture Assistant has recorded "
-            f"{total_queries} chatbot interactions. "
-            f"These records can be used by administrators to "
-            f"understand user questions and assistant usage.",
+            f"The AgriNova Agriculture Assistant "
+            f"has recorded {total_queries} chatbot "
+            f"interactions. These records can be "
+            f"used by administrators to understand "
+            f"user questions and assistant usage.",
             styles["BodyTextReport"],
         )
     )
@@ -1145,10 +1237,6 @@ def forecast_report(request):
     styles = get_styles()
     story = []
 
-    # --------------------------------------------------------
-    # SUMMARY COUNTS
-    # --------------------------------------------------------
-
     total_records = PriceRecord.objects.count()
 
     different_crops = (
@@ -1165,27 +1253,25 @@ def forecast_report(request):
         .count()
     )
 
-    synthetic_records = PriceRecord.objects.filter(
-        is_synthetic=True
-    ).count()
+    synthetic_records = (
+        PriceRecord.objects
+        .filter(is_synthetic=True)
+        .count()
+    )
 
-    market_records = PriceRecord.objects.filter(
-        is_synthetic=False
-    ).count()
-
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # Do NOT load all price records into the PDF.
-    # Render has limited memory.
-    #
-    # Summary = all records
-    # Detailed table = latest 200 records
-    # --------------------------------------------------------
+    market_records = (
+        PriceRecord.objects
+        .filter(is_synthetic=False)
+        .count()
+    )
 
     records = (
         PriceRecord.objects
         .select_related("crop")
-        .order_by("-date", "-id")[:200]
+        .order_by(
+            "-date",
+            "-id",
+        )[:200]
     )
 
     report_title(
@@ -1198,10 +1284,22 @@ def forecast_report(request):
     story.append(
         summary_boxes(
             [
-                ("Total Price Records", total_records),
-                ("Different Crops", different_crops),
-                ("Different Districts", different_districts),
-                ("Demo / Synthetic", synthetic_records),
+                (
+                    "Total Price Records",
+                    total_records,
+                ),
+                (
+                    "Different Crops",
+                    different_crops,
+                ),
+                (
+                    "Different Districts",
+                    different_districts,
+                ),
+                (
+                    "Demo / Synthetic",
+                    synthetic_records,
+                ),
             ],
             styles,
         )
@@ -1213,17 +1311,16 @@ def forecast_report(request):
         summary_boxes(
             [
                 ("Market Data", market_records),
-                ("Detailed Records", min(total_records, 200)),
+                (
+                    "Detailed Records",
+                    min(total_records, 200),
+                ),
             ],
             styles,
         )
     )
 
     story.append(Spacer(1, 12))
-
-    # --------------------------------------------------------
-    # PRICE DATA DETAILS
-    # --------------------------------------------------------
 
     story.append(
         Paragraph(
@@ -1234,11 +1331,12 @@ def forecast_report(request):
 
     story.append(
         Paragraph(
-            "The summary statistics above cover all price records "
-            "available in the AgriNova database. To keep the PDF "
-            "efficient and suitable for the deployed Render server, "
-            "the detailed table below contains only the latest "
-            "200 price records.",
+            "The summary statistics above cover all "
+            "price records available in the AgriNova "
+            "database. To keep the PDF efficient and "
+            "suitable for the deployed Render server, "
+            "the detailed table below contains only "
+            "the latest 200 price records.",
             styles["BodyTextReport"],
         )
     )
@@ -1254,7 +1352,10 @@ def forecast_report(request):
         ]
     ]
 
-    for index, record in enumerate(records, start=1):
+    for index, record in enumerate(
+        records,
+        start=1,
+    ):
 
         date_value = getattr(
             record,
@@ -1280,11 +1381,14 @@ def forecast_report(request):
             else "-"
         )
 
-        district = getattr(
-            record,
-            "district",
-            "-"
-        ) or "-"
+        district = (
+            getattr(
+                record,
+                "district",
+                "-",
+            )
+            or "-"
+        )
 
         price = getattr(
             record,
@@ -1333,10 +1437,6 @@ def forecast_report(request):
 
     story.append(Spacer(1, 12))
 
-    # --------------------------------------------------------
-    # FORECASTING SUMMARY
-    # --------------------------------------------------------
-
     story.append(
         Paragraph(
             "Forecasting Summary",
@@ -1346,23 +1446,25 @@ def forecast_report(request):
 
     story.append(
         Paragraph(
-            f"The AgriNova Price Forecast module currently contains "
-            f"{total_records} price records covering "
-            f"{different_crops} crops and "
-            f"{different_districts} districts. "
-            f"{synthetic_records} records are simulated/demo data "
-            f"and {market_records} records are marked as market data. "
-            "These records support historical price analysis and "
-            "future agricultural price forecasting.",
+            f"The AgriNova Price Forecast module "
+            f"currently contains {total_records} "
+            f"price records covering {different_crops} "
+            f"crops and {different_districts} districts. "
+            f"{synthetic_records} records are simulated/"
+            f"demo data and {market_records} records are "
+            f"marked as market data. These records support "
+            f"historical price analysis and future "
+            f"agricultural price forecasting.",
             styles["BodyTextReport"],
         )
     )
 
     story.append(
         Paragraph(
-            "Note: The detailed table is intentionally limited to "
-            "the latest 200 records so that the report can be "
-            "generated reliably on the deployed application.",
+            "Note: The detailed table is intentionally "
+            "limited to the latest 200 records so that "
+            "the report can be generated reliably on "
+            "the deployed application.",
             styles["BodyTextReport"],
         )
     )
@@ -1383,10 +1485,6 @@ def combined_report(request):
 
     User = get_user_model()
 
-    # --------------------------------------------------------
-    # DATABASE SUMMARY
-    # --------------------------------------------------------
-
     total_users = User.objects.count()
 
     total_orders = Order.objects.count()
@@ -1404,10 +1502,6 @@ def combined_report(request):
 
     total_price_records = PriceRecord.objects.count()
 
-    # --------------------------------------------------------
-    # USER STATISTICS
-    # --------------------------------------------------------
-
     active_users = User.objects.filter(
         is_active=True
     ).count()
@@ -1415,10 +1509,6 @@ def combined_report(request):
     staff_users = User.objects.filter(
         is_staff=True
     ).count()
-
-    # --------------------------------------------------------
-    # ORDER STATISTICS
-    # --------------------------------------------------------
 
     pending_orders = Order.objects.filter(
         status="pending"
@@ -1428,10 +1518,6 @@ def combined_report(request):
         status="completed"
     ).count()
 
-    # --------------------------------------------------------
-    # LISTING STATISTICS
-    # --------------------------------------------------------
-
     active_listings = Listing.objects.filter(
         is_active=True
     ).count()
@@ -1440,20 +1526,12 @@ def combined_report(request):
         total_listings - active_listings
     )
 
-    # --------------------------------------------------------
-    # CHATBOT STATISTICS
-    # --------------------------------------------------------
-
     unique_chat_users = (
         ChatLog.objects
         .values("user")
         .distinct()
         .count()
     )
-
-    # --------------------------------------------------------
-    # FORECAST STATISTICS
-    # --------------------------------------------------------
 
     crop_count = (
         PriceRecord.objects
@@ -1469,17 +1547,17 @@ def combined_report(request):
         .count()
     )
 
-    synthetic_records = PriceRecord.objects.filter(
-        is_synthetic=True
-    ).count()
+    synthetic_records = (
+        PriceRecord.objects
+        .filter(is_synthetic=True)
+        .count()
+    )
 
-    market_records = PriceRecord.objects.filter(
-        is_synthetic=False
-    ).count()
-
-    # --------------------------------------------------------
-    # REPORT TITLE
-    # --------------------------------------------------------
+    market_records = (
+        PriceRecord.objects
+        .filter(is_synthetic=False)
+        .count()
+    )
 
     report_title(
         story,
@@ -1487,10 +1565,6 @@ def combined_report(request):
         "Comprehensive administrative overview of the AgriNova platform.",
         styles,
     )
-
-    # --------------------------------------------------------
-    # EXECUTIVE SUMMARY
-    # --------------------------------------------------------
 
     story.append(
         Paragraph(
@@ -1501,11 +1575,13 @@ def combined_report(request):
 
     story.append(
         Paragraph(
-            "This combined report provides a consolidated overview "
-            "of the major activities performed within the AgriNova "
-            "smart agriculture marketplace. It includes user "
-            "activity, purchasing activity, seller listings, "
-            "AI chatbot usage and agricultural price data.",
+            "This combined report provides a "
+            "consolidated overview of the major "
+            "activities performed within the AgriNova "
+            "smart agriculture marketplace. It includes "
+            "user activity, purchasing activity, seller "
+            "listings, AI chatbot usage and agricultural "
+            "price data.",
             styles["BodyTextReport"],
         )
     )
@@ -1518,7 +1594,10 @@ def combined_report(request):
                 ("Users", total_users),
                 ("Orders", total_orders),
                 ("Listings", total_listings),
-                ("Chatbot Queries", total_chatbot_queries),
+                (
+                    "Chatbot Queries",
+                    total_chatbot_queries,
+                ),
             ],
             styles,
         )
@@ -1553,7 +1632,7 @@ def combined_report(request):
     story.append(PageBreak())
 
     # --------------------------------------------------------
-    # 1. USER MODULE
+    # USER MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1565,9 +1644,10 @@ def combined_report(request):
 
     story.append(
         Paragraph(
-            f"AgriNova has {total_users} registered users. "
-            f"{active_users} accounts are currently active and "
-            f"{staff_users} users have administrative privileges.",
+            f"AgriNova has {total_users} registered "
+            f"users. {active_users} accounts are currently "
+            f"active and {staff_users} users have "
+            f"administrative privileges.",
             styles["BodyTextReport"],
         )
     )
@@ -1593,7 +1673,7 @@ def combined_report(request):
     story.append(Spacer(1, 15))
 
     # --------------------------------------------------------
-    # 2. BUY MODULE
+    # BUY MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1605,9 +1685,10 @@ def combined_report(request):
 
     story.append(
         Paragraph(
-            f"The platform has recorded {total_orders} orders "
-            f"with a total recorded value of Rs. {total_sales}. "
-            f"There are {pending_orders} pending orders and "
+            f"The platform has recorded {total_orders} "
+            f"orders with a total recorded value of "
+            f"Rs. {total_sales}. There are "
+            f"{pending_orders} pending orders and "
             f"{completed_orders} completed orders.",
             styles["BodyTextReport"],
         )
@@ -1616,7 +1697,10 @@ def combined_report(request):
     order_data = [
         ["Metric", "Value"],
         ["Total Orders", total_orders],
-        ["Total Purchase / Sales Value", f"Rs. {total_sales}"],
+        [
+            "Total Purchase / Sales Value",
+            f"Rs. {total_sales}",
+        ],
         ["Pending Orders", pending_orders],
         ["Completed Orders", completed_orders],
     ]
@@ -1635,7 +1719,7 @@ def combined_report(request):
     story.append(Spacer(1, 15))
 
     # --------------------------------------------------------
-    # 3. SELL MODULE
+    # SELL MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1648,9 +1732,9 @@ def combined_report(request):
     story.append(
         Paragraph(
             f"The marketplace contains {total_listings} "
-            f"product listings. "
-            f"{active_listings} listings are currently active "
-            f"and {inactive_listings} are inactive.",
+            f"product listings. {active_listings} "
+            f"listings are currently active and "
+            f"{inactive_listings} are inactive.",
             styles["BodyTextReport"],
         )
     )
@@ -1676,7 +1760,7 @@ def combined_report(request):
     story.append(Spacer(1, 15))
 
     # --------------------------------------------------------
-    # 4. AI CHATBOT MODULE
+    # AI CHATBOT MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1688,19 +1772,25 @@ def combined_report(request):
 
     story.append(
         Paragraph(
-            f"The AI Agriculture Assistant has recorded "
-            f"{total_chatbot_queries} queries from "
-            f"{unique_chat_users} users. "
-            "These interactions support agricultural guidance "
-            "and marketplace assistance.",
+            f"The AI Agriculture Assistant has "
+            f"recorded {total_chatbot_queries} "
+            f"queries from {unique_chat_users} users. "
+            "These interactions support agricultural "
+            "guidance and marketplace assistance.",
             styles["BodyTextReport"],
         )
     )
 
     chatbot_data = [
         ["Metric", "Value"],
-        ["Total Chatbot Queries", total_chatbot_queries],
-        ["Unique Users", unique_chat_users],
+        [
+            "Total Chatbot Queries",
+            total_chatbot_queries,
+        ],
+        [
+            "Unique Users",
+            unique_chat_users,
+        ],
     ]
 
     story.append(
@@ -1717,7 +1807,7 @@ def combined_report(request):
     story.append(Spacer(1, 15))
 
     # --------------------------------------------------------
-    # 5. PRICE FORECAST MODULE
+    # PRICE FORECAST MODULE
     # --------------------------------------------------------
 
     story.append(
@@ -1731,21 +1821,33 @@ def combined_report(request):
         Paragraph(
             f"The Price Forecasting module contains "
             f"{total_price_records} price records covering "
-            f"{crop_count} crops and "
-            f"{district_count} districts. "
-            f"{synthetic_records} records are simulated/demo data "
-            f"and {market_records} records are marked as market data.",
+            f"{crop_count} crops and {district_count} "
+            f"districts. {synthetic_records} records are "
+            f"simulated/demo data and {market_records} "
+            f"records are marked as market data.",
             styles["BodyTextReport"],
         )
     )
 
     forecast_data = [
         ["Metric", "Value"],
-        ["Total Price Records", total_price_records],
+        [
+            "Total Price Records",
+            total_price_records,
+        ],
         ["Different Crops", crop_count],
-        ["Different Districts", district_count],
-        ["Simulated / Demo Records", synthetic_records],
-        ["Market Data Records", market_records],
+        [
+            "Different Districts",
+            district_count,
+        ],
+        [
+            "Simulated / Demo Records",
+            synthetic_records,
+        ],
+        [
+            "Market Data Records",
+            market_records,
+        ],
     ]
 
     story.append(
@@ -1847,12 +1949,13 @@ def combined_report(request):
 
     story.append(
         Paragraph(
-            "The combined report demonstrates the overall activity "
-            "of the AgriNova platform across marketplace, ordering, "
-            "seller, AI assistant and agricultural price modules. "
-            "These statistics provide administrators with a "
-            "high-level view of platform usage and operational "
-            "activity.",
+            "The combined report demonstrates the "
+            "overall activity of the AgriNova platform "
+            "across marketplace, ordering, seller, "
+            "AI assistant and agricultural price modules. "
+            "These statistics provide administrators "
+            "with a high-level view of platform usage "
+            "and operational activity.",
             styles["BodyTextReport"],
         )
     )
